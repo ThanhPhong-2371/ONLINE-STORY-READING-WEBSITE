@@ -22,6 +22,10 @@ public class StoryService {
         return storyRepository.findByTitleContainingIgnoreCase(keyword, pageable);
     }
 
+    public java.util.Optional<Story> getBySlug(String slug) {
+        return storyRepository.findBySlug(slug);
+    }
+
     public Page<Story> filterByGenres(List<Genre> genres, Pageable pageable) {
         return storyRepository.findByGenresIn(genres, pageable);
     }

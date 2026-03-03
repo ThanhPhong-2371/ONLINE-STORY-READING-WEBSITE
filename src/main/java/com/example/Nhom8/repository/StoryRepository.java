@@ -14,6 +14,8 @@ public interface StoryRepository extends JpaRepository<Story, Long> {
 
     Page<Story> findByGenresIn(List<Genre> genres, Pageable pageable);
 
+    java.util.Optional<Story> findBySlug(String slug);
+
     // For Statistics
     List<Story> findTop10ByOrderByViewCountDesc();
 }
