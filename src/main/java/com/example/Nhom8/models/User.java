@@ -45,6 +45,9 @@ public class User {
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
+    @Builder.Default
+    private boolean enabled = true;
+
     private LocalDateTime createdAt;
 
     @PrePersist
