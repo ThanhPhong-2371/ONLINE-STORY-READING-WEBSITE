@@ -33,5 +33,21 @@ public class StoryController {
         return ResponseEntity.ok(stories.map(StoryDTO::fromEntity));
     }
 
-    // Additional Staff/Admin endpoints would go here with @PreAuthorize
+    @PostMapping
+    public ResponseEntity<StoryDTO> createStory(@RequestBody Story story) {
+        Story createdStory = storyService.createStory(story);
+        return ResponseEntity.ok(StoryDTO.fromEntity(createdStory));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<StoryDTO> updateStory(@PathVariable Long id, @RequestBody Story storyDetails) {
+        Story updatedStory = storyService.updateStory(id, storyDetails);
+        return ResponseEntity.ok(StoryDTO.fromEntity(updatedStory));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteStory(@PathVariable Long id) {
+        storyService.deleteStory(id);
+        return ResponseEntity.noContent().build();
+    }
 }

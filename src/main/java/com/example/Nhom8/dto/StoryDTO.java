@@ -10,6 +10,7 @@ import com.example.Nhom8.models.Story;
 public class StoryDTO {
     private Long id;
     private String title;
+    private String slug;
     private String description;
     private String coverImage;
     private String author;
@@ -22,6 +23,7 @@ public class StoryDTO {
         StoryDTO dto = new StoryDTO();
         dto.setId(story.getId());
         dto.setTitle(story.getTitle());
+        dto.setSlug(story.getSlug());
         dto.setDescription(story.getDescription());
         dto.setCoverImage(story.getCoverImage());
         dto.setAuthor(story.getAuthor());

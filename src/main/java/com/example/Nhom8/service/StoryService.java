@@ -37,6 +37,7 @@ public class StoryService {
     public Story updateStory(Long id, Story storyDetails) {
         Story story = getStoryById(id);
         story.setTitle(storyDetails.getTitle());
+        story.setSlug(storyDetails.getSlug());
         story.setDescription(storyDetails.getDescription());
         story.setCoverImage(storyDetails.getCoverImage());
         story.setAuthor(storyDetails.getAuthor());

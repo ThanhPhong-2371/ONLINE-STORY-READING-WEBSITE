@@ -30,6 +30,9 @@ public class Chapter {
 
     private LocalDateTime createdAt;
 
+    // Hàm này sẽ tự động chạy trước khi entity được lưu lần đầu vào database
+    // PrePersist: Trước khi INSERT
+    // PreUpdate: Trước khi UPDATE
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

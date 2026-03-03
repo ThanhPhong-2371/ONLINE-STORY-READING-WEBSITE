@@ -14,7 +14,7 @@ public class ChatbotService {
             return "Gói Premium của chúng tôi cho phép bạn đọc tất cả truyện khóa và không quảng cáo!";
         }
         if (message.toLowerCase().contains("thanh toán")) {
-            return "Chúng tôi hỗ trợ thanh toán qua Momo và VNPay.";
+            return "Chúng tôi hỗ trợ thanh toán trực tuyến.";
         }
         return "Chào bạn! Tôi có thể giúp gì cho bạn về việc mua sách hoặc sử dụng dịch vụ không?";
     }

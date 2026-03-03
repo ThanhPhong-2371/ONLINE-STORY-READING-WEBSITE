@@ -18,7 +18,7 @@ public class Rating {
     private Long id;
 
     @Column(nullable = false)
-    private int stars; // 1-5
+    private int stars;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
