@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+*.md
+# But keep README.md
+!README.md
+*.txt
