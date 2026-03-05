@@ -36,3 +36,5 @@ build/
 # But keep README.md
 !README.md
 *.txt
+
+.env
