@@ -38,6 +38,9 @@ public class User {
     private LocalDateTime premiumExpiry;
 
     @Builder.Default
+    private boolean isPremium = false;
+
+    @Builder.Default
     private boolean isActive = true;
 
     @ManyToMany(fetch = FetchType.EAGER)
