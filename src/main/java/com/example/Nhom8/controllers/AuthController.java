@@ -36,9 +36,9 @@ public class AuthController {
             com.example.Nhom8.models.User user = userRepository.findByUsername(loginRequest.getUsername())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            java.util.Set<String> roles = user.getRoles().stream()
+            java.util.List<String> roles = user.getRoles().stream()
                     .map(com.example.Nhom8.models.Role::getName)
-                    .collect(java.util.stream.Collectors.toSet());
+                    .collect(java.util.stream.Collectors.toList());
 
             return ResponseEntity.ok(new JwtAuthenticationResponse(jwt, user.getUsername(), user.getAvatar(), roles));
         } catch (org.springframework.security.authentication.DisabledException e) {

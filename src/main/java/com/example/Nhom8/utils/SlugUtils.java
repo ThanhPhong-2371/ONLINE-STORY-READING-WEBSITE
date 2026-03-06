@@ -1,6 +1,7 @@
 package com.example.Nhom8.utils;
 
 import java.text.Normalizer;
+import java.util.regex.Pattern;
 
 public class SlugUtils {
     public static String toSlug(String input) {

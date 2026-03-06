@@ -49,8 +49,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
-                        .requestMatchers("/api/stories/**", "/api/chapters/**").permitAll() // Public viewing
+                        .requestMatchers("/api/stories", "/api/stories/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/chapters", "/api/chapters/**")
+                        .permitAll()
+                        .requestMatchers("/api/chapters", "/api/chapters/**").hasAnyAuthority("ADMIN", "STAFF")
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "STAFF")
                         .anyRequest().authenticated());
