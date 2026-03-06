@@ -10,10 +10,12 @@ public class JwtAuthenticationResponse {
     private String tokenType = "Bearer";
     private String username;
     private String avatar;
+    private java.util.Set<String> roles;
 
-    public JwtAuthenticationResponse(String accessToken, String username, String avatar) {
+    public JwtAuthenticationResponse(String accessToken, String username, String avatar, java.util.Set<String> roles) {
         this.accessToken = accessToken;
         this.username = username;
         this.avatar = avatar;
+        this.roles = roles;
     }
 }
