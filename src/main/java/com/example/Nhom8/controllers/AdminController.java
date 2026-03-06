@@ -27,9 +27,7 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers(@RequestParam(required = false) String username) {
         if (username != null && !username.isEmpty()) {
-            return ResponseEntity.ok(userRepository.findAll().stream()
-                    .filter(u -> u.getUsername().contains(username))
-                    .collect(Collectors.toList()));
+            return ResponseEntity.ok(userRepository.findByUsernameContainingIgnoreCase(username));
         }
         return ResponseEntity.ok(userRepository.findAll());
     }
@@ -60,14 +58,15 @@ public class AdminController {
     @DeleteMapping("/users/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         userRepository.deleteById(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok("User deleted successfully");
     }
 
     @PutMapping("/users/{id}/toggle-status")
     public ResponseEntity<?> toggleUserStatus(@PathVariable Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setActive(!user.isActive());
+        user.setEnabled(!user.isEnabled());
+        user.setActive(user.isEnabled()); // Sync both fields if necessary, but isEnabled is used for security
         userRepository.save(user);
         return ResponseEntity.ok(user);
     }
