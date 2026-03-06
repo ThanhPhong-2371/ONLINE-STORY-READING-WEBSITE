@@ -28,6 +28,13 @@ public class GenreController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<Genre> getGenreBySlug(@PathVariable String slug) {
+        return genreRepository.findBySlug(slug)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<Genre> createGenre(@RequestBody Genre genre) {
         if (genre.getSlug() == null || genre.getSlug().isEmpty()) {

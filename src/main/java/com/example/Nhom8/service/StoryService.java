@@ -30,6 +30,18 @@ public class StoryService {
         return storyRepository.findByGenresIn(genres, pageable);
     }
 
+    public Page<Story> filterByGenreSlug(String slug, Pageable pageable) {
+        return storyRepository.findByGenreSlug(slug, pageable);
+    }
+
+    public Page<Story> filterByStatus(Story.StoryStatus status, Pageable pageable) {
+        return storyRepository.findByStatus(status, pageable);
+    }
+
+    public Page<Story> filterByPremium(boolean isPremium, Pageable pageable) {
+        return storyRepository.findByIsPremium(isPremium, pageable);
+    }
+
     public Story getStoryById(Long id) {
         return storyRepository.findById(id).orElseThrow(() -> new RuntimeException("Story not found"));
     }

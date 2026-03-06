@@ -65,6 +65,6 @@ public class Story {
     }
 
     public enum StoryStatus {
-        ONGOING, COMPLETED, DROPPED
+        ONGOING, COMPLETED, DROPPED, COMING_SOON
     }
 }
