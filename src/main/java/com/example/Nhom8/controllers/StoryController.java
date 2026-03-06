@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class StoryController {
     private final StoryService storyService;
+    private final com.example.Nhom8.service.ChapterService chapterService;
     private final com.example.Nhom8.repository.UserRepository userRepository;
     private final com.example.Nhom8.repository.GenreRepository genreRepository;
 
@@ -32,6 +33,40 @@ public class StoryController {
     @GetMapping("/search")
     public ResponseEntity<Page<StoryDTO>> searchStories(@RequestParam String q, Pageable pageable) {
         Page<Story> stories = storyService.searchStories(q, pageable);
+        return ResponseEntity.ok(stories.map(StoryDTO::fromEntity));
+    }
+
+    @GetMapping("/genre/{genreSlug}")
+    public ResponseEntity<Page<StoryDTO>> getStoriesByGenre(@PathVariable String genreSlug, Pageable pageable) {
+        Page<Story> stories = storyService.filterByGenreSlug(genreSlug, pageable);
+        return ResponseEntity.ok(stories.map(StoryDTO::fromEntity));
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<Page<StoryDTO>> getStoriesByStatus(@PathVariable String status, Pageable pageable) {
+        try {
+            Story.StoryStatus storyStatus = Story.StoryStatus.valueOf(status.toUpperCase());
+            Page<Story> stories = storyService.filterByStatus(storyStatus, pageable);
+            return ResponseEntity.ok(stories.map(StoryDTO::fromEntity));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/premium")
+    public ResponseEntity<Page<StoryDTO>> getPremiumStories(Pageable pageable) {
+        Page<Story> stories = storyService.filterByPremium(true, pageable);
+        return ResponseEntity.ok(stories.map(StoryDTO::fromEntity));
+    }
+
+    @GetMapping("/new")
+    public ResponseEntity<Page<StoryDTO>> getNewStories(Pageable pageable) {
+        // Just return stories ordered by createdAt desc
+        Page<Story> stories = storyService.getAllStories(
+                org.springframework.data.domain.PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        org.springframework.data.domain.Sort.by("createdAt").descending()));
         return ResponseEntity.ok(stories.map(StoryDTO::fromEntity));
     }
 
@@ -67,7 +102,7 @@ public class StoryController {
         story.setDescription((String) data.get("description"));
         story.setCoverImage((String) data.get("coverImage"));
         story.setStatus(Story.StoryStatus.valueOf((String) data.get("status")));
-        story.setPremium((boolean) data.get("isPremium"));
+        story.setPremium(data.get("isPremium") != null && (boolean) data.get("isPremium"));
         story.setViewCount(0L);
 
         // Handle genres
@@ -79,7 +114,7 @@ public class StoryController {
                         .orElseGet(() -> {
                             com.example.Nhom8.models.Genre newG = new com.example.Nhom8.models.Genre();
                             newG.setName(gName);
-                            newG.setSlug(com.example.Nhom8.utils.SlugUtils.toSlug(gName)); // Need helper
+                            newG.setSlug(com.example.Nhom8.utils.SlugUtils.toSlug(gName));
                             return genreRepository.save(newG);
                         });
                 genres.add(genre);
@@ -96,6 +131,38 @@ public class StoryController {
         }
 
         Story createdStory = storyService.createStory(story);
+
+        // Handle chapters if present
+        Object chaptersObj = data.get("chapters");
+        if (chaptersObj instanceof java.util.List) {
+            java.util.List<?> servers = (java.util.List<?>) chaptersObj;
+            if (!servers.isEmpty()) {
+                Object firstServerObj = servers.get(0);
+                if (firstServerObj instanceof java.util.Map) {
+                    java.util.Map<String, Object> firstServer = (java.util.Map<String, Object>) firstServerObj;
+                    Object serverDataObj = firstServer.get("server_data");
+                    if (serverDataObj instanceof java.util.List) {
+                        java.util.List<java.util.Map<String, Object>> chaptersRaw = (java.util.List<java.util.Map<String, Object>>) serverDataObj;
+                        for (java.util.Map<String, Object> chData : chaptersRaw) {
+                            com.example.Nhom8.models.Chapter chapter = new com.example.Nhom8.models.Chapter();
+                            String chNameStr = String.valueOf(chData.get("chapter_name"));
+                            try {
+                                double num = Double.parseDouble(chNameStr);
+                                chapter.setChapterNumber((int) num);
+                            } catch (Exception e) {
+                                chapter.setChapterNumber(0);
+                            }
+                            String chTitle = (String) chData.get("chapter_title");
+                            chapter.setTitle((chTitle == null || chTitle.isEmpty()) ? "Chương " + chNameStr : chTitle);
+                            chapter.setContent((String) chData.get("chapter_api_data"));
+                            chapter.setStory(createdStory);
+                            chapterService.createChapter(chapter);
+                        }
+                    }
+                }
+            }
+        }
+
         return ResponseEntity.ok(StoryDTO.fromEntity(createdStory));
     }
 

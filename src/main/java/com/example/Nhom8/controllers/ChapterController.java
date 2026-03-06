@@ -1,5 +1,6 @@
 package com.example.Nhom8.controllers;
 
+import com.example.Nhom8.dto.ChapterDTO;
 import com.example.Nhom8.models.Chapter;
 import com.example.Nhom8.service.ChapterService;
 import lombok.RequiredArgsConstructor;
@@ -15,17 +16,38 @@ public class ChapterController {
     private final ChapterService chapterService;
 
     @GetMapping("/story/{storyId}")
-    public ResponseEntity<Page<Chapter>> getChaptersByStory(@PathVariable Long storyId, Pageable pageable) {
-        return ResponseEntity.ok(chapterService.getChaptersByStory(storyId, pageable));
+    public ResponseEntity<Page<ChapterDTO>> getChaptersByStory(@PathVariable Long storyId, Pageable pageable) {
+        Page<Chapter> chapters = chapterService.getChaptersByStory(storyId, pageable);
+        return ResponseEntity.ok(chapters.map(ChapterDTO::fromEntity));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Chapter> getChapterById(@PathVariable Long id) {
-        return ResponseEntity.ok(chapterService.getChapterById(id));
+    public ResponseEntity<ChapterDTO> getChapterById(@PathVariable Long id) {
+        Chapter chapter = chapterService.getChapterById(id);
+        return ResponseEntity.ok(ChapterDTO.fromEntity(chapter));
     }
 
     @GetMapping("/story/{storyId}/number/{number}")
-    public ResponseEntity<Chapter> getChapterByNumber(@PathVariable Long storyId, @PathVariable int number) {
-        return ResponseEntity.ok(chapterService.getChapterByNumber(storyId, number));
+    public ResponseEntity<ChapterDTO> getChapterByNumber(@PathVariable Long storyId, @PathVariable int number) {
+        Chapter chapter = chapterService.getChapterByNumber(storyId, number);
+        return ResponseEntity.ok(ChapterDTO.fromEntity(chapter));
+    }
+
+    @PostMapping
+    public ResponseEntity<ChapterDTO> createChapter(@RequestBody Chapter chapter) {
+        Chapter createdChapter = chapterService.createChapter(chapter);
+        return ResponseEntity.ok(ChapterDTO.fromEntity(createdChapter));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ChapterDTO> updateChapter(@PathVariable Long id, @RequestBody Chapter chapterDetails) {
+        Chapter updatedChapter = chapterService.updateChapter(id, chapterDetails);
+        return ResponseEntity.ok(ChapterDTO.fromEntity(updatedChapter));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteChapter(@PathVariable Long id) {
+        chapterService.deleteChapter(id);
+        return ResponseEntity.noContent().build();
     }
 }
