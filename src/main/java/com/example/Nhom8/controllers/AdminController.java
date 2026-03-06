@@ -7,20 +7,22 @@ import com.example.Nhom8.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ADMIN')")
-public class AdminUserController {
+public class AdminController {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers(@RequestParam(required = false) String username) {
@@ -30,29 +32,43 @@ public class AdminUserController {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
+    @PostMapping("/users")
+    public ResponseEntity<?> createUser(@RequestBody User user) {
+        if (userRepository.existsByUsername(user.getUsername())) {
+            return ResponseEntity.badRequest().body("Username already exists");
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return ResponseEntity.ok(userRepository.save(user));
+    }
+
     @PutMapping("/users/{id}")
-    public ResponseEntity<?> updateUserInfo(@PathVariable Long id, @RequestBody User userDetails) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setFullName(userDetails.getFullName());
         user.setEmail(userDetails.getEmail());
-        // Add more fields if needed
+        if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+        }
 
-        userRepository.save(user);
-        return ResponseEntity.ok("User updated successfully");
+        return ResponseEntity.ok(userRepository.save(user));
     }
 
-    @PostMapping("/users/{id}/toggle-status")
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return ResponseEntity.ok("User deleted successfully");
+    }
+
+    @PutMapping("/users/{id}/toggle-status")
     public ResponseEntity<?> toggleUserStatus(@PathVariable Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         user.setEnabled(!user.isEnabled());
+        user.setActive(user.isEnabled()); // Sync both fields if necessary, but isEnabled is used for security
         userRepository.save(user);
-
-        String status = user.isEnabled() ? "enabled" : "disabled";
-        return ResponseEntity.ok("User status updated to " + status);
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/roles")
@@ -60,31 +76,15 @@ public class AdminUserController {
         return ResponseEntity.ok(roleRepository.findAll());
     }
 
-    @PostMapping("/users/{id}/roles")
-    public ResponseEntity<?> updateUserRoles(@PathVariable Long id, @RequestBody List<Long> roleIds) {
-        User user = userRepository.findById(id)
+    @PostMapping("/users/{userId}/roles")
+    public ResponseEntity<?> updateUserRoles(@PathVariable Long userId, @RequestBody Set<Long> roleIds) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Set<Role> roles = new HashSet<>();
-        for (Long roleId : roleIds) {
-            Role role = roleRepository.findById(roleId)
-                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-            roles.add(role);
-        }
-
+        Set<Role> roles = roleRepository.findAllById(roleIds).stream().collect(Collectors.toSet());
         user.setRoles(roles);
         userRepository.save(user);
 
-        return ResponseEntity.ok("User roles updated successfully");
-    }
-
-    @DeleteMapping("/users/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        if (!userRepository.existsById(id)) {
-            return ResponseEntity.badRequest().body("Error: User not found");
-        }
-
-        userRepository.deleteById(id);
-        return ResponseEntity.ok("User deleted successfully");
+        return ResponseEntity.ok("Roles updated successfully");
     }
 }

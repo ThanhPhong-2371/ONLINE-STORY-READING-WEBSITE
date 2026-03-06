@@ -24,22 +24,30 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()));
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = tokenProvider.generateToken(authentication);
 
-        com.example.Nhom8.models.User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+            com.example.Nhom8.models.User user = userRepository.findByUsername(loginRequest.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        java.util.List<String> roles = user.getRoles().stream()
-                .map(role -> role.getName())
-                .collect(java.util.stream.Collectors.toList());
+            java.util.List<String> roles = user.getRoles().stream()
+                    .map(com.example.Nhom8.models.Role::getName)
+                    .collect(java.util.stream.Collectors.toList());
 
-        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt, user.getUsername(), user.getAvatar(), roles));
+            return ResponseEntity.ok(new JwtAuthenticationResponse(jwt, user.getUsername(), user.getAvatar(), roles));
+        } catch (org.springframework.security.authentication.DisabledException e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                    .body("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                    .body("Tên đăng nhập hoặc mật khẩu không chính xác.");
+        }
     }
 
     @PostMapping("/register")
