@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/premium/packages/**")
                         .permitAll()
+                        .requestMatchers("/api/payment/vnpay-callback").permitAll()
                         .requestMatchers("/api/chapters", "/api/chapters/**").hasAnyAuthority("ADMIN", "STAFF")
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "STAFF")

@@ -4,10 +4,25 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.Nhom8.models.Transaction;
 
+import org.springframework.data.jpa.repository.Query;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     List<Transaction> findByUserId(Long userId);
+
+    Optional<Transaction> findByTransactionId(String transactionId);
+
+    @Query("SELECT SUM(t.amount) FROM Transaction t WHERE t.status = 'SUCCESS'")
+    BigDecimal getTotalRevenue();
+
+    @Query("SELECT t.paymentMethod, SUM(t.amount) FROM Transaction t WHERE t.status = 'SUCCESS' GROUP BY t.paymentMethod")
+    List<Object[]> getRevenueByPaymentMethod();
+
+    long countByStatus(com.example.Nhom8.models.Transaction.TransactionStatus status);
+
+    List<Transaction> findTop10ByOrderByCreatedAtDesc();
 
     // For Statistics
     // @Query("SELECT SUM(t.amount) FROM Transaction t WHERE t.status = 'SUCCESS'")
