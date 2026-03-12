@@ -52,6 +52,9 @@ public class User {
     private boolean enabled = true;
 
     private LocalDateTime createdAt;
+    
+    private String resetPasswordToken;
+    private LocalDateTime tokenExpiration;
 
     @PrePersist
     protected void onCreate() {

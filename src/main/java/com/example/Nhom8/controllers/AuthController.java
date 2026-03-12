@@ -2,8 +2,14 @@ package com.example.Nhom8.controllers;
 
 import com.example.Nhom8.dto.JwtAuthenticationResponse;
 import com.example.Nhom8.dto.LoginRequest;
+import com.example.Nhom8.dto.ForgotPasswordRequest;
+import com.example.Nhom8.dto.ResetPasswordRequest;
+import com.example.Nhom8.models.User;
 import com.example.Nhom8.security.JwtTokenProvider;
+import com.example.Nhom8.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.Random;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +27,7 @@ public class AuthController {
     private final com.example.Nhom8.repository.UserRepository userRepository;
     private final com.example.Nhom8.repository.RoleRepository roleRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
@@ -100,5 +107,41 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok("User registered successfully!");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Email không tồn tại trong hệ thống."));
+
+        String otp = String.format("%06d", new Random().nextInt(1000000));
+        user.setResetPasswordToken(otp);
+        user.setTokenExpiration(LocalDateTime.now().plusMinutes(5));
+        userRepository.save(user);
+
+        emailService.sendEmail(user.getEmail(), "Mã xác nhận quên mật khẩu", "Mã OTP của bạn là: " + otp + ". Mã có hiệu lực trong 5 phút.");
+
+        return ResponseEntity.ok("Mã xác nhận đã được gửi đến email của bạn.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại."));
+
+        if (user.getResetPasswordToken() == null || !user.getResetPasswordToken().equals(request.getOtp())) {
+            return ResponseEntity.badRequest().body("Mã xác nhận không chính xác.");
+        }
+
+        if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Mã xác nhận đã hết hạn.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setResetPasswordToken(null);
+        user.setTokenExpiration(null);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Mật khẩu đã được thay đổi thành công.");
     }
 }

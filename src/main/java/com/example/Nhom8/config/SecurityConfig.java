@@ -75,6 +75,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "STAFF")
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                        }))
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(
                                 auth -> auth.authorizationRequestResolver(authorizationRequestResolver()))
