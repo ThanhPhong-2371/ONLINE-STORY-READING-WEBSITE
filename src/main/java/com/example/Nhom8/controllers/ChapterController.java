@@ -4,6 +4,7 @@ import com.example.Nhom8.dto.ChapterDTO;
 import com.example.Nhom8.models.Chapter;
 import com.example.Nhom8.service.ChapterService;
 import com.example.Nhom8.repository.UserRepository;
+import com.example.Nhom8.service.SystemLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 public class ChapterController {
     private final ChapterService chapterService;
     private final UserRepository userRepository;
+    private final SystemLogService systemLogService;
 
     private boolean isUserPremium(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) return false;
@@ -73,18 +75,23 @@ public class ChapterController {
     @PostMapping
     public ResponseEntity<ChapterDTO> createChapter(@RequestBody Chapter chapter) {
         Chapter createdChapter = chapterService.createChapter(chapter);
+        systemLogService.log("CREATE_CHAPTER", "Đã thêm chương: " + createdChapter.getTitle() + " cho truyện IDs: " + createdChapter.getStory().getId());
         return ResponseEntity.ok(ChapterDTO.fromEntity(createdChapter));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ChapterDTO> updateChapter(@PathVariable Long id, @RequestBody Chapter chapterDetails) {
         Chapter updatedChapter = chapterService.updateChapter(id, chapterDetails);
+        systemLogService.log("UPDATE_CHAPTER", "Đã cập nhật chương: " + updatedChapter.getTitle());
         return ResponseEntity.ok(ChapterDTO.fromEntity(updatedChapter));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteChapter(@PathVariable Long id) {
+        Chapter chapter = chapterService.getChapterById(id);
+        String name = (chapter != null) ? chapter.getTitle() : id.toString();
         chapterService.deleteChapter(id);
+        systemLogService.log("DELETE_CHAPTER", "Đã xóa chương: " + name);
         return ResponseEntity.noContent().build();
     }
 }
