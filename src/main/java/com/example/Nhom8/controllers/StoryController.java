@@ -3,20 +3,25 @@ package com.example.Nhom8.controllers;
 import com.example.Nhom8.dto.StoryDTO;
 import com.example.Nhom8.models.Story;
 import com.example.Nhom8.service.StoryService;
+import com.example.Nhom8.service.SystemLogService;
+import com.example.Nhom8.service.ChapterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.Nhom8.repository.UserRepository;
+import com.example.Nhom8.repository.GenreRepository;
 
 @RestController
 @RequestMapping("/api/stories")
 @RequiredArgsConstructor
 public class StoryController {
     private final StoryService storyService;
-    private final com.example.Nhom8.service.ChapterService chapterService;
-    private final com.example.Nhom8.repository.UserRepository userRepository;
-    private final com.example.Nhom8.repository.GenreRepository genreRepository;
+    private final ChapterService chapterService;
+    private final UserRepository userRepository;
+    private final GenreRepository genreRepository;
+    private final SystemLogService systemLogService;
 
     @GetMapping
     public ResponseEntity<Page<StoryDTO>> getAllStories(Pageable pageable) {
@@ -212,6 +217,7 @@ public class StoryController {
                 }
             }
         }
+        systemLogService.log("CREATE_STORY", "Đã tạo truyện mới: " + createdStory.getTitle());
 
         return ResponseEntity.ok(StoryDTO.fromEntity(createdStory));
     }
@@ -221,12 +227,16 @@ public class StoryController {
         Story existingStory = storyService.getStoryById(id);
         mapDataToStory(data, existingStory);
         Story updatedStory = storyService.createStory(existingStory); // update
+        systemLogService.log("UPDATE_STORY", "Đã cập nhật thông tin truyện: " + updatedStory.getTitle());
         return ResponseEntity.ok(StoryDTO.fromEntity(updatedStory));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStory(@PathVariable Long id) {
+        Story story = storyService.getStoryById(id);
+        String title = (story != null) ? story.getTitle() : id.toString();
         storyService.deleteStory(id);
+        systemLogService.log("DELETE_STORY", "Đã xóa truyện: " + title);
         return ResponseEntity.noContent().build();
     }
 }

@@ -2,6 +2,7 @@ package com.example.Nhom8.controllers;
 
 import com.example.Nhom8.models.Genre;
 import com.example.Nhom8.repository.GenreRepository;
+import com.example.Nhom8.service.SystemLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GenreController {
     private final GenreRepository genreRepository;
+    private final SystemLogService systemLogService;
 
     @GetMapping
     public ResponseEntity<List<Genre>> getAllGenres() {
@@ -40,7 +42,9 @@ public class GenreController {
         if (genre.getSlug() == null || genre.getSlug().isEmpty()) {
             genre.setSlug(SlugUtils.toSlug(genre.getName()));
         }
-        return ResponseEntity.ok(genreRepository.save(genre));
+        Genre saved = genreRepository.save(genre);
+        systemLogService.log("CREATE_GENRE", "Đã thêm thể loại: " + saved.getName());
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")
@@ -50,15 +54,20 @@ public class GenreController {
                     genre.setName(genreDetails.getName());
                     genre.setDescription(genreDetails.getDescription());
                     genre.setSlug(SlugUtils.toSlug(genreDetails.getName()));
-                    return ResponseEntity.ok(genreRepository.save(genre));
+                    Genre saved = genreRepository.save(genre);
+                    systemLogService.log("UPDATE_GENRE", "Đã cập nhật thể loại: " + saved.getName());
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGenre(@PathVariable Long id) {
+        Genre genre = genreRepository.findById(id).orElse(null);
+        String name = (genre != null) ? genre.getName() : id.toString();
         if (genreRepository.existsById(id)) {
             genreRepository.deleteById(id);
+            systemLogService.log("DELETE_GENRE", "Đã xóa thể loại: " + name);
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
