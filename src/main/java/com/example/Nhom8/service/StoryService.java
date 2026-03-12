@@ -43,7 +43,8 @@ public class StoryService {
     }
 
     public Story getStoryById(Long id) {
-        return storyRepository.findById(id).orElseThrow(() -> new RuntimeException("Story not found"));
+        return storyRepository.findById(id).orElseThrow(() -> 
+            new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Story not found"));
     }
 
     public Story createStory(Story story) {

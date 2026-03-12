@@ -15,6 +15,7 @@ public class StoryDTO {
     private String coverImage;
     private String author;
     private String status;
+    @com.fasterxml.jackson.annotation.JsonProperty("isPremium")
     private boolean isPremium;
     private long viewCount;
     private Set<String> genres;
