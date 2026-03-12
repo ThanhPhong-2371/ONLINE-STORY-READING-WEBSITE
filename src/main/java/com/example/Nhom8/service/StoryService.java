@@ -67,4 +67,8 @@ public class StoryService {
     public void deleteStory(Long id) {
         storyRepository.deleteById(id);
     }
+
+    public List<Story> getTopRatedStories(int limit) {
+        return storyRepository.findTopRatedStories(org.springframework.data.domain.PageRequest.of(0, limit));
+    }
 }
