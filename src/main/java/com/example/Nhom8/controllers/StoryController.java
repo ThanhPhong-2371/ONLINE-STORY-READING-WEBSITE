@@ -75,6 +75,12 @@ public class StoryController {
         return ResponseEntity.ok(stories.map(StoryDTO::fromEntity));
     }
 
+    @GetMapping("/top-rated")
+    public ResponseEntity<java.util.List<StoryDTO>> getTopRatedStories(@RequestParam(defaultValue = "10") int limit) {
+        java.util.List<Story> stories = storyService.getTopRatedStories(limit);
+        return ResponseEntity.ok(stories.stream().map(StoryDTO::fromEntity).collect(java.util.stream.Collectors.toList()));
+    }
+
     @PostMapping
     public ResponseEntity<StoryDTO> createStory(@RequestBody java.util.Map<String, Object> data) {
         String slug = (String) data.get("slug");
