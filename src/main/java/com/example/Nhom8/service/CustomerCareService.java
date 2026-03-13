@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CustomerCareService {
 
+    private static final Pattern FAQ_DELIMITERS = Pattern.compile("\\s*(?:\\||,|;|/|\\n)\\s*");
+
     private final SupportConversationRepository conversationRepo;
     private final SupportMessageRepository messageRepo;
     private final FaqItemRepository faqItemRepo;
@@ -135,21 +137,95 @@ public class CustomerCareService {
         if (text == null)
             return "";
         String nfd = Normalizer.normalize(text.toLowerCase().trim(), Normalizer.Form.NFD);
-        return DIACRITICS.matcher(nfd).replaceAll("").replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+        String normalized = DIACRITICS.matcher(nfd).replaceAll("").replace('đ', 'd');
+        return normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
     }
 
     String matchFaq(String userMessage) {
         String normalized = normalize(userMessage);
+        if (normalized.isBlank()) {
+            return null;
+        }
+
         List<FaqItem> faqs = faqItemRepo.findByActiveTrueOrderByPriorityDesc();
+        if (faqs.isEmpty()) {
+            faqs = buildDefaultFaqs();
+        }
+
         for (FaqItem faq : faqs) {
-            String[] keywords = normalize(faq.getQuestionPattern()).split("\\s+");
-            long matched = Arrays.stream(keywords).filter(k -> k.length() > 1 && normalized.contains(k)).count();
-            double ratio = keywords.length > 0 ? (double) matched / keywords.length : 0;
-            if (ratio >= 0.5) {
-                return faq.getAnswerText();
+            for (String candidate : extractPatterns(faq.getQuestionPattern())) {
+                if (isFaqMatch(normalized, candidate)) {
+                    return faq.getAnswerText();
+                }
             }
         }
         return null;
+    }
+
+    public static List<FaqItem> buildDefaultFaqs() {
+        return List.of(
+                defaultFaq("xin chao|chao ban|hello|hi",
+                        "Chào bạn! Mình đang hỗ trợ CSKH đây. Bạn cần hỗ trợ về thanh toán, Premium, hướng dẫn sử dụng hay báo lỗi ạ?",
+                        100),
+                defaultFaq("premium|goi premium|mua premium|nang cap premium",
+                        "Bạn có thể vào trang Premium để xem gói và thanh toán. Sau khi thanh toán thành công, hệ thống sẽ tự cập nhật quyền Premium cho tài khoản của bạn.",
+                        90),
+                defaultFaq("thanh toan|payment|nap tien|mua goi",
+                        "Hiện tại hệ thống hỗ trợ thanh toán trực tuyến cho gói Premium. Nếu thanh toán xong mà chưa nhận gói, bạn hãy gửi mã giao dịch để admin kiểm tra giúp nhé.",
+                        80),
+                defaultFaq("huong dan|huong dan su dung|cach su dung|doc truyen",
+                        "Bạn chỉ cần đăng nhập, chọn truyện muốn đọc và mở chương tương ứng. Nếu muốn lưu truyện hoặc dùng Premium, hãy đăng nhập trước khi thao tác nhé.",
+                        70),
+                defaultFaq("bao loi|loi he thong|bug|khong vao duoc",
+                        "Bạn vui lòng mô tả lỗi đang gặp, kèm ảnh chụp màn hình nếu có. Admin sẽ kiểm tra và phản hồi cho bạn sớm nhất.",
+                        60));
+    }
+
+    private static FaqItem defaultFaq(String pattern, String answer, int priority) {
+        return FaqItem.builder()
+                .questionPattern(pattern)
+                .answerText(answer)
+                .priority(priority)
+                .active(true)
+                .build();
+    }
+
+    private List<String> extractPatterns(String rawPattern) {
+        if (rawPattern == null || rawPattern.isBlank()) {
+            return List.of();
+        }
+
+        return Arrays.stream(FAQ_DELIMITERS.split(rawPattern))
+                .map(this::normalize)
+                .filter(s -> !s.isBlank())
+                .toList();
+    }
+
+    private boolean isFaqMatch(String normalizedMessage, String candidate) {
+        if (candidate.isBlank()) {
+            return false;
+        }
+        if (normalizedMessage.equals(candidate) || normalizedMessage.contains(candidate)) {
+            return true;
+        }
+
+        String[] keywords = candidate.split("\\s+");
+        long effectiveKeywordCount = Arrays.stream(keywords).filter(k -> k.length() > 1).count();
+        if (effectiveKeywordCount == 0) {
+            return normalizedMessage.equals(candidate);
+        }
+
+        long matched = Arrays.stream(keywords)
+                .filter(k -> k.length() > 1)
+                .filter(normalizedMessage::contains)
+                .count();
+
+        if (effectiveKeywordCount <= 2) {
+            return matched == effectiveKeywordCount;
+        }
+
+        double ratio = (double) matched / effectiveKeywordCount;
+        return ratio >= 0.6 || matched >= 2;
     }
 
     // ── WebSocket broadcasting ──
@@ -182,6 +258,12 @@ public class CustomerCareService {
     }
 
     public FaqItem saveFaq(FaqItem faq) {
+        if (faq.getQuestionPattern() != null) {
+            faq.setQuestionPattern(faq.getQuestionPattern().trim());
+        }
+        if (faq.getAnswerText() != null) {
+            faq.setAnswerText(faq.getAnswerText().trim());
+        }
         return faqItemRepo.save(faq);
     }
 

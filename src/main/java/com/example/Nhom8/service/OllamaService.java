@@ -23,7 +23,7 @@ public class OllamaService {
     @Value("${ollama.embed-model:nomic-embed-text}")
     private String embedModel;
 
-    @Value("${ollama.chat-model:qwen2.5:7b-instruct}")
+    @Value("${ollama.chat-model:qwen2.5:3b}")
     private String chatModel;
 
     // ──────────── Embedding ────────────
@@ -62,19 +62,38 @@ public class OllamaService {
     // ──────────── Chat ────────────
 
     /**
-     * Non-streaming chat with Ollama.
+     * Non-streaming chat with Ollama (single turn).
      *
      * @param systemPrompt system-role message (nullable)
      * @param userMessage  user-role message
      * @return assistant response text
      */
-    @SuppressWarnings("unchecked")
     public String chat(String systemPrompt, String userMessage) {
+        return chatWithHistory(systemPrompt, userMessage, List.of());
+    }
+
+    /**
+     * Non-streaming chat with Ollama, supporting multi-turn conversation history.
+     *
+     * @param systemPrompt system-role message (nullable)
+     * @param userMessage  current user message
+     * @param history      previous turns: each map must have "role"
+     *                     ("user"/"assistant") and "content"
+     * @return assistant response text
+     */
+    @SuppressWarnings("unchecked")
+    public String chatWithHistory(String systemPrompt, String userMessage,
+            List<Map<String, String>> history) {
         String url = ollamaUrl + "/api/chat";
 
         List<Map<String, String>> messages = new ArrayList<>();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
             messages.add(Map.of("role", "system", "content", systemPrompt));
+        }
+        // Append previous conversation turns (cap at last 10 to avoid token overflow)
+        if (history != null && !history.isEmpty()) {
+            int start = Math.max(0, history.size() - 10);
+            messages.addAll(history.subList(start, history.size()));
         }
         messages.add(Map.of("role", "user", "content", userMessage));
 

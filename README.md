@@ -58,7 +58,7 @@ Get-Content .\sql\V2__support_chat_and_faq.sql | mysql -u root -p nhom8_db
 
 ```powershell
 ollama pull nomic-embed-text
-ollama pull qwen2.5:7b-instruct
+ollama pull qwen2.5:3b
 ```
 
 Đảm bảo Ollama service đang chạy tại `http://localhost:11434`.
