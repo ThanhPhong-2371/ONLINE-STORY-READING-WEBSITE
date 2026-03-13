@@ -39,7 +39,8 @@ public class AuthController {
                 .map(role -> role.getName())
                 .collect(java.util.stream.Collectors.toList());
 
-        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt, user.getUsername(), user.getAvatar(), roles));
+        return ResponseEntity
+                .ok(new JwtAuthenticationResponse(jwt, user.getId(), user.getUsername(), user.getAvatar(), roles));
     }
 
     @PostMapping("/register")

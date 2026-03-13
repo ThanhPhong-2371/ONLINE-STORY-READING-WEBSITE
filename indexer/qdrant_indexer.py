@@ -35,7 +35,7 @@ EMBED_DIM         = int(os.getenv("EMBED_DIM", "768"))
 BATCH_SIZE        = int(os.getenv("BATCH_SIZE", "100"))
 
 MYSQL_HOST     = os.getenv("MYSQL_HOST", "127.0.0.1")
-MYSQL_PORT     = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_PORT     = int(os.getenv("MYSQL_PORT", "3307"))
 MYSQL_USER     = os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 MYSQL_DB       = os.getenv("MYSQL_DB", "nhom8_db")
@@ -45,22 +45,46 @@ logger = logging.getLogger(__name__)
 
 
 # ──────────── Ollama embedding ────────────
-def embed_texts(texts: List[str], retries: int = 3) -> List[List[float]]:
-    """Call Ollama /api/embed to get embeddings for a list of texts."""
+def _embed_via_new_api(texts: List[str]) -> List[List[float]]:
+    """Ollama new API: POST /api/embed with batched input."""
     url = f"{OLLAMA_URL}/api/embed"
-    payload = {"model": EMBED_MODEL, "input": texts}
+    resp = requests.post(url, json={"model": EMBED_MODEL, "input": texts}, timeout=120)
+    resp.raise_for_status()
+    data = resp.json()
+    embeddings = data.get("embeddings", [])
+    if len(embeddings) != len(texts):
+        raise ValueError(f"Expected {len(texts)} embeddings, got {len(embeddings)}")
+    return embeddings
+
+
+def _embed_via_legacy_api(texts: List[str]) -> List[List[float]]:
+    """Ollama legacy API: POST /api/embeddings with one prompt per request."""
+    url = f"{OLLAMA_URL}/api/embeddings"
+    embeddings: List[List[float]] = []
+    for text in texts:
+        resp = requests.post(url, json={"model": EMBED_MODEL, "prompt": text}, timeout=120)
+        resp.raise_for_status()
+        data = resp.json()
+        vector = data.get("embedding")
+        if not vector:
+            raise ValueError("Legacy /api/embeddings returned no 'embedding'")
+        embeddings.append(vector)
+    return embeddings
+
+
+def embed_texts(texts: List[str], retries: int = 3) -> List[List[float]]:
+    """Get embeddings for a list of texts; supports both new and legacy Ollama APIs."""
 
     for attempt in range(1, retries + 1):
         try:
-            resp = requests.post(url, json=payload, timeout=120)
-            resp.raise_for_status()
-            data = resp.json()
-            embeddings = data.get("embeddings", [])
-            if len(embeddings) != len(texts):
-                raise ValueError(
-                    f"Expected {len(texts)} embeddings, got {len(embeddings)}"
-                )
-            return embeddings
+            try:
+                return _embed_via_new_api(texts)
+            except requests.HTTPError as http_err:
+                status_code = http_err.response.status_code if http_err.response is not None else None
+                if status_code == 404:
+                    logger.info("/api/embed not found, fallback to legacy /api/embeddings")
+                    return _embed_via_legacy_api(texts)
+                raise
         except Exception as e:
             logger.warning(f"Embed attempt {attempt}/{retries} failed: {e}")
             if attempt < retries:

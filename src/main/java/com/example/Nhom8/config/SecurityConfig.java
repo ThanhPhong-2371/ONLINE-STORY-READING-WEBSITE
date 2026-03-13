@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/stories", "/api/stories/**").permitAll()
                         .requestMatchers("/api/manga/**").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
+                        .requestMatchers("/api/support/**").authenticated()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/chapters", "/api/chapters/**")
                         .permitAll()
                         .requestMatchers("/api/chapters", "/api/chapters/**").hasAnyAuthority("ADMIN", "STAFF")
