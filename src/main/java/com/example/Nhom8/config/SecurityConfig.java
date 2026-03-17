@@ -4,6 +4,7 @@ import com.example.Nhom8.security.CustomUserDetailsService;
 import com.example.Nhom8.security.JwtAuthenticationFilter;
 import com.example.Nhom8.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,10 +27,10 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtTokenProvider tokenProvider;
     private final com.example.Nhom8.security.OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-    private final org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrationRepository;
+    private final ObjectProvider<org.springframework.security.oauth2.client.registration.ClientRegistrationRepository> clientRegistrationRepositoryProvider;
 
-    @Bean
-    public org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver authorizationRequestResolver() {
+    private org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver authorizationRequestResolver(
+            org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrationRepository) {
         org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver resolver = new org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository, "/oauth2/authorization");
         resolver.setAuthorizationRequestCustomizer(
@@ -63,6 +64,11 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
                         .requestMatchers("/api/stories", "/api/stories/**").permitAll()
+
+                        .requestMatchers("/api/manga/**").permitAll()
+                        .requestMatchers("/api/chatbot/**").permitAll()
+                        .requestMatchers("/api/support/**").authenticated()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/genres", "/api/genres/**")
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/chapters", "/api/chapters/**")
@@ -77,12 +83,19 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-                        }))
-                .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(
-                                auth -> auth.authorizationRequestResolver(authorizationRequestResolver()))
-                        .successHandler(oAuth2LoginSuccessHandler));
+                            response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED,
+                                    "Unauthorized");
+                        }));
+
+        org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrationRepository = clientRegistrationRepositoryProvider
+                .getIfAvailable();
+        if (clientRegistrationRepository != null) {
+            http.oauth2Login(oauth2 -> oauth2
+                    .authorizationEndpoint(
+                            auth -> auth.authorizationRequestResolver(
+                                    authorizationRequestResolver(clientRegistrationRepository)))
+                    .successHandler(oAuth2LoginSuccessHandler));
+        }
 
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 

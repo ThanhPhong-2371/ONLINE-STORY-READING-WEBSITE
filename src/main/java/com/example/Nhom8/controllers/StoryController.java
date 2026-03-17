@@ -78,7 +78,8 @@ public class StoryController {
     @GetMapping("/top-rated")
     public ResponseEntity<java.util.List<StoryDTO>> getTopRatedStories(@RequestParam(defaultValue = "10") int limit) {
         java.util.List<Story> stories = storyService.getTopRatedStories(limit);
-        return ResponseEntity.ok(stories.stream().map(StoryDTO::fromEntity).collect(java.util.stream.Collectors.toList()));
+        return ResponseEntity
+                .ok(stories.stream().map(StoryDTO::fromEntity).collect(java.util.stream.Collectors.toList()));
     }
 
     @PostMapping
@@ -90,10 +91,10 @@ public class StoryController {
                 return ResponseEntity.badRequest().body(null);
             }
         }
-        
+
         Story story = new Story();
         mapDataToStory(data, story);
-        
+
         // Set creator from current auth
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -106,22 +107,30 @@ public class StoryController {
     }
 
     private void mapDataToStory(java.util.Map<String, Object> data, Story story) {
-        if (data.containsKey("title")) story.setTitle((String) data.get("title"));
-        if (data.containsKey("slug")) story.setSlug((String) data.get("slug"));
-        if (data.containsKey("author")) story.setAuthor((String) data.get("author"));
-        if (data.containsKey("description")) story.setDescription((String) data.get("description"));
-        if (data.containsKey("coverImage")) story.setCoverImage((String) data.get("coverImage"));
-        
+        if (data.containsKey("title"))
+            story.setTitle((String) data.get("title"));
+        if (data.containsKey("slug"))
+            story.setSlug((String) data.get("slug"));
+        if (data.containsKey("author"))
+            story.setAuthor((String) data.get("author"));
+        if (data.containsKey("description"))
+            story.setDescription((String) data.get("description"));
+        if (data.containsKey("coverImage"))
+            story.setCoverImage((String) data.get("coverImage"));
+
         if (data.containsKey("status")) {
             try {
                 story.setStatus(Story.StoryStatus.valueOf((String) data.get("status")));
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
-        
+
         if (data.containsKey("isPremium")) {
             Object premium = data.get("isPremium");
-            if (premium instanceof Boolean) story.setPremium((Boolean) premium);
-            else story.setPremium(Boolean.parseBoolean(String.valueOf(premium)));
+            if (premium instanceof Boolean)
+                story.setPremium((Boolean) premium);
+            else
+                story.setPremium(Boolean.parseBoolean(String.valueOf(premium)));
         }
 
         if (data.containsKey("genres")) {
@@ -229,7 +238,8 @@ public class StoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<StoryDTO> updateStory(@PathVariable Long id, @RequestBody java.util.Map<String, Object> data) {
+    public ResponseEntity<StoryDTO> updateStory(@PathVariable Long id,
+            @RequestBody java.util.Map<String, Object> data) {
         Story existingStory = storyService.getStoryById(id);
         mapDataToStory(data, existingStory);
         Story updatedStory = storyService.createStory(existingStory); // update

@@ -47,7 +47,10 @@ public class AuthController {
                     .map(com.example.Nhom8.models.Role::getName)
                     .collect(java.util.stream.Collectors.toList());
 
-            return ResponseEntity.ok(new JwtAuthenticationResponse(jwt, user.getUsername(), user.getAvatar(), roles));
+
+        return ResponseEntity
+                .ok(new JwtAuthenticationResponse(jwt, user.getId(), user.getUsername(), user.getAvatar(), roles));
+            
         } catch (org.springframework.security.authentication.DisabledException e) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
                     .body("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
@@ -55,6 +58,7 @@ public class AuthController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
                     .body("Tên đăng nhập hoặc mật khẩu không chính xác.");
         }
+
     }
 
     @PostMapping("/register")
