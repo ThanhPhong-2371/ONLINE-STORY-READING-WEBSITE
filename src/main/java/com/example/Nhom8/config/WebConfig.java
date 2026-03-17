@@ -9,19 +9,13 @@ import java.nio.file.Paths;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        exposeDirectory("uploads", registry);
-    }
+        Path uploadDir = Paths.get("uploads");
+        String uploadPath = uploadDir.toFile().toURI().toString();
 
-    private void exposeDirectory(String dirName, ResourceHandlerRegistry registry) {
-        Path uploadDir = Paths.get(dirName);
-        String uploadPath = uploadDir.toFile().getAbsolutePath();
-
-        if (dirName.startsWith("../"))
-            dirName = dirName.replace("../", "");
-
-        registry.addResourceHandler("/" + dirName + "/**")
-                .addResourceLocations("file:/" + uploadPath + "/");
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(uploadPath);
     }
 }

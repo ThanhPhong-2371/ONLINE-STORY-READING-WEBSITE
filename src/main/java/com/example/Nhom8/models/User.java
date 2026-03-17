@@ -35,10 +35,13 @@ public class User {
 
     private String providerId;
 
+    private LocalDateTime premiumExpiry;
+
     @Builder.Default
     private boolean isPremium = false;
 
-    private LocalDateTime premiumExpiry;
+    @Builder.Default
+    private boolean isActive = true;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
@@ -49,6 +52,9 @@ public class User {
     private boolean enabled = true;
 
     private LocalDateTime createdAt;
+    
+    private String resetPasswordToken;
+    private LocalDateTime tokenExpiration;
 
     @PrePersist
     protected void onCreate() {

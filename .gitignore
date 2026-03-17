@@ -32,6 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
+### Secrets ###
+src/main/resources/application.properties
+
 *.md
 # But keep README.md
 !README.md

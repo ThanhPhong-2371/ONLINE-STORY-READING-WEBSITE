@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+
 @Entity
 @Table(name = "stories")
 @Getter
@@ -65,6 +66,6 @@ public class Story {
     }
 
     public enum StoryStatus {
-        ONGOING, COMPLETED, DROPPED
+        ONGOING, COMPLETED, DROPPED, COMING_SOON
     }
 }
