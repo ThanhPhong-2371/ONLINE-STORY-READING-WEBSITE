@@ -232,7 +232,7 @@ public class StoryController {
     public ResponseEntity<StoryDTO> updateStory(@PathVariable Long id, @RequestBody java.util.Map<String, Object> data) {
         Story existingStory = storyService.getStoryById(id);
         mapDataToStory(data, existingStory);
-        Story updatedStory = storyService.createStory(existingStory); // update
+        Story updatedStory = storyService.createStory(existingStory); 
         systemLogService.log("UPDATE_STORY", "Đã cập nhật thông tin truyện: " + updatedStory.getTitle());
         return ResponseEntity.ok(StoryDTO.fromEntity(updatedStory));
     }
