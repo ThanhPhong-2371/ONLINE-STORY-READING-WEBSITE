@@ -4,6 +4,7 @@ import com.example.Nhom8.models.Genre;
 import com.example.Nhom8.models.Story;
 import com.example.Nhom8.repository.StoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -11,8 +12,10 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StoryService {
     private final StoryRepository storyRepository;
+    private final HybridSearchService hybridSearchService;
 
     public Page<Story> getAllStories(Pageable pageable) {
         return storyRepository.findAll(pageable);
@@ -48,7 +51,9 @@ public class StoryService {
     }
 
     public Story createStory(Story story) {
-        return storyRepository.save(story);
+        Story savedStory = storyRepository.save(story);
+        syncStoryToQdrant(savedStory.getId());
+        return savedStory;
     }
 
     public Story updateStory(Long id, Story storyDetails) {
@@ -61,11 +66,34 @@ public class StoryService {
         story.setStatus(storyDetails.getStatus());
         story.setPremium(storyDetails.isPremium());
         story.setGenres(storyDetails.getGenres());
-        return storyRepository.save(story);
+        Story savedStory = storyRepository.save(story);
+        syncStoryToQdrant(savedStory.getId());
+        return savedStory;
     }
 
     public void deleteStory(Long id) {
         storyRepository.deleteById(id);
+        removeStoryFromQdrant(id);
+    }
+
+    private void syncStoryToQdrant(Long storyId) {
+        try {
+            hybridSearchService.reindexStory(storyId);
+        } catch (Exception ex) {
+            log.warn("Failed to auto-reindex story id={} after DB save: {}", storyId, ex.getMessage());
+        }
+    }
+
+    private void removeStoryFromQdrant(Long storyId) {
+        try {
+            hybridSearchService.deleteFromIndex(storyId);
+        } catch (Exception ex) {
+            log.warn("Failed to auto-delete story id={} from Qdrant after DB delete: {}", storyId, ex.getMessage());
+        }
+    }
+
+    public List<Story> getTopRatedStories(int limit) {
+        return storyRepository.findTopRatedStories(org.springframework.data.domain.PageRequest.of(0, limit));
     }
 
     public List<Story> getTopRatedStories(int limit) {
