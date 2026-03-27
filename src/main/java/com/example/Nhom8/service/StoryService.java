@@ -96,7 +96,5 @@ public class StoryService {
         return storyRepository.findTopRatedStories(org.springframework.data.domain.PageRequest.of(0, limit));
     }
 
-    public List<Story> getTopRatedStories(int limit) {
-        return storyRepository.findTopRatedStories(org.springframework.data.domain.PageRequest.of(0, limit));
-    }
+    
 }
