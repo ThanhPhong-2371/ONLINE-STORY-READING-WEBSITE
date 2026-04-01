@@ -38,18 +38,22 @@ public class VNPayConfig {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
         Collections.sort(fieldNames);
         StringBuilder sb = new StringBuilder();
-        Iterator<String> itr = fieldNames.iterator();
-        while (itr.hasNext()) {
-            String fieldName = itr.next();
-            String fieldValue = fields.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                sb.append(fieldName);
-                sb.append("=");
-                sb.append(fieldValue);
+        try {
+            boolean first = true;
+            for (String fieldName : fieldNames) {
+                String fieldValue = fields.get(fieldName);
+                if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                    if (!first) {
+                        sb.append("&");
+                    }
+                    sb.append(fieldName);
+                    sb.append("=");
+                    sb.append(java.net.URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                    first = false;
+                }
             }
-            if (itr.hasNext()) {
-                sb.append("&");
-            }
+        } catch (java.io.UnsupportedEncodingException e) {
+            return "";
         }
         return hmacSHA512(hashSecret, sb.toString());
     }

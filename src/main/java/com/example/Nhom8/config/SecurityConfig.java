@@ -63,7 +63,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
-                        .requestMatchers("/api/stories", "/api/stories/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/stories", "/api/stories/**").permitAll()
 
                         .requestMatchers("/api/manga/**").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
@@ -75,7 +75,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/premium/packages/**")
                         .permitAll()
-                        .requestMatchers("/api/payment/vnpay-callback").permitAll()
+                        .requestMatchers("/api/payment/vnpay-callback", "/api/payment/momo-callback").permitAll()
                         .requestMatchers("/api/chapters", "/api/chapters/**").hasAnyAuthority("ADMIN", "STAFF")
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "STAFF")

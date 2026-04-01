@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 /**
  * Hybrid search: MySQL FULLTEXT + Qdrant vector → weighted merge → rerank.
@@ -37,8 +39,10 @@ public class HybridSearchService {
         if (limit <= 0)
             limit = DEFAULT_LIMIT;
 
+        String cleanedQuery = query.trim();
+
         // 1. MySQL fulltext search
-        List<Object[]> fulltextResults = storyRepository.fulltextSearch(query, limit);
+        List<Object[]> fulltextResults = storyRepository.fulltextSearch(cleanedQuery, limit);
         Map<Long, Double> mysqlScores = new LinkedHashMap<>();
         double maxFt = 0;
         for (Object[] row : fulltextResults) {
@@ -48,6 +52,15 @@ public class HybridSearchService {
             if (score > maxFt)
                 maxFt = score;
         }
+
+        // 1b. Exact match boost (Title or Author)
+        List<Story> exactMatches = storyRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(cleanedQuery, cleanedQuery);
+        for (Story s : exactMatches) {
+            double boost = s.getTitle().equalsIgnoreCase(cleanedQuery) || s.getAuthor().equalsIgnoreCase(cleanedQuery) ? 2.0 : 1.2;
+            mysqlScores.put(s.getId(), mysqlScores.getOrDefault(s.getId(), 0.0) + boost);
+            if (mysqlScores.get(s.getId()) > maxFt) maxFt = mysqlScores.get(s.getId());
+        }
+
         // Normalize MySQL scores to 0..1
         if (maxFt > 0) {
             for (Map.Entry<Long, Double> e : mysqlScores.entrySet()) {
@@ -56,7 +69,7 @@ public class HybridSearchService {
         }
 
         // 2. Qdrant vector search
-        List<Double> queryVector = ollamaService.embed(query);
+        List<Double> queryVector = ollamaService.embed(cleanedQuery);
         List<Map<String, Object>> vectorResults = qdrantService.search(queryVector, limit);
         Map<Long, Double> qdrantScores = new LinkedHashMap<>();
         Map<Long, Map<String, Object>> qdrantPayloads = new HashMap<>();
@@ -194,12 +207,16 @@ public class HybridSearchService {
      * @return number of stories indexed
      */
     public int reindexAll() {
-        List<Story> allStories = storyRepository.findAll();
         int count = 0;
         int batchSize = 50;
+        int page = 0;
+        Page<Story> storyPage;
 
-        for (int i = 0; i < allStories.size(); i += batchSize) {
-            List<Story> batch = allStories.subList(i, Math.min(i + batchSize, allStories.size()));
+        do {
+            storyPage = storyRepository.findAll(PageRequest.of(page, batchSize));
+            List<Story> batch = storyPage.getContent();
+            
+            if (batch.isEmpty()) break;
 
             List<String> texts = batch.stream()
                     .map(this::composeSearchText)
@@ -214,8 +231,9 @@ public class HybridSearchService {
 
             qdrantService.upsert(points);
             count += batch.size();
-            log.info("Reindexed batch {}/{}", count, allStories.size());
-        }
+            log.info("Reindexed batch: {}/{} total stories", count, storyPage.getTotalElements());
+            page++;
+        } while (storyPage.hasNext());
 
         return count;
     }

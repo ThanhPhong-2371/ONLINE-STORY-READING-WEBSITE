@@ -1,10 +1,10 @@
 package com.example.Nhom8.service;
 
+import com.example.Nhom8.repository.StoryRepository;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,25 +15,31 @@ class ChatbotServiceTest {
     void getResponse_stillCallsAiWhenHybridSearchFails() {
         OllamaService ollamaService = mock(OllamaService.class);
         HybridSearchService hybridSearchService = mock(HybridSearchService.class);
-        when(hybridSearchService.hybridSearch("hello", 5)).thenThrow(new RuntimeException("search down"));
-        when(ollamaService.chat(anyString(), eq("hello"))).thenReturn("Xin chào!");
+        PremiumPackageService premiumPackageService = mock(PremiumPackageService.class);
+        StoryRepository storyRepository = mock(StoryRepository.class);
 
-        ChatbotService service = new ChatbotService(ollamaService, hybridSearchService);
+        when(hybridSearchService.hybridSearch(anyString(), anyInt())).thenThrow(new RuntimeException("search down"));
+        when(ollamaService.chatWithHistory(anyString(), anyString(), anyList())).thenReturn("Xin chào!");
+
+        ChatbotService service = new ChatbotService(ollamaService, hybridSearchService, premiumPackageService, storyRepository);
 
         assertEquals("Xin chào!", service.getResponse("hello"));
-        verify(ollamaService).chat(anyString(), eq("hello"));
+        verify(ollamaService).chatWithHistory(anyString(), contains("hello"), anyList());
     }
 
     @Test
     void getResponse_returnsFallbackWhenAiChatFails() {
         OllamaService ollamaService = mock(OllamaService.class);
         HybridSearchService hybridSearchService = mock(HybridSearchService.class);
-        when(hybridSearchService.hybridSearch("premium", 5)).thenThrow(new RuntimeException("search down"));
-        when(ollamaService.chat(anyString(), eq("premium"))).thenThrow(new RuntimeException("chat down"));
+        PremiumPackageService premiumPackageService = mock(PremiumPackageService.class);
+        StoryRepository storyRepository = mock(StoryRepository.class);
 
-        ChatbotService service = new ChatbotService(ollamaService, hybridSearchService);
+        when(ollamaService.chatWithHistory(anyString(), anyString(), anyList())).thenThrow(new RuntimeException("chat down"));
 
-        assertEquals("Gói Premium của chúng tôi cho phép bạn đọc tất cả truyện khóa và không quảng cáo!",
-                service.getResponse("premium"));
+        ChatbotService service = new ChatbotService(ollamaService, hybridSearchService, premiumPackageService, storyRepository);
+
+        String response = service.getResponse("premium");
+        assertEquals("Gói Premium cho phép bạn đọc tất cả truyện khóa, không quảng cáo, và ưu tiên chương mới. Vào mục Tài khoản > Nâng cấp Premium để đăng ký!",
+                response);
     }
 }

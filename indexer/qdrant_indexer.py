@@ -27,7 +27,7 @@ from qdrant_client.models import (
 load_dotenv()
 
 # ──────────── Config ────────────
-QDRANT_URL        = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_URL        = os.getenv("QDRANT_URL", "http://localhost:6335")
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "manga")
 OLLAMA_URL        = os.getenv("OLLAMA_URL", "http://localhost:11434")
 EMBED_MODEL       = os.getenv("EMBED_MODEL", "nomic-embed-text")
@@ -35,7 +35,7 @@ EMBED_DIM         = int(os.getenv("EMBED_DIM", "768"))
 BATCH_SIZE        = int(os.getenv("BATCH_SIZE", "100"))
 
 MYSQL_HOST     = os.getenv("MYSQL_HOST", "127.0.0.1")
-MYSQL_PORT     = int(os.getenv("MYSQL_PORT", "3307"))
+MYSQL_PORT     = int(os.getenv("MYSQL_PORT", "3306"))
 MYSQL_USER     = os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 MYSQL_DB       = os.getenv("MYSQL_DB", "nhom8_db")

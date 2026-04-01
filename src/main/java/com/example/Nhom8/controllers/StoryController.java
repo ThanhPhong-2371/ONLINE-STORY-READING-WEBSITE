@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.Nhom8.repository.UserRepository;
 import com.example.Nhom8.repository.GenreRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/stories")
@@ -83,6 +85,7 @@ public class StoryController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<StoryDTO> createStory(@RequestBody java.util.Map<String, Object> data) {
         String slug = (String) data.get("slug");
         if (slug != null) {
@@ -154,6 +157,7 @@ public class StoryController {
     }
 
     @PostMapping("/import")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<StoryDTO> importStory(@RequestBody java.util.Map<String, Object> data) {
         String slug = (String) data.get("slug");
         if (slug == null) {
@@ -238,6 +242,7 @@ public class StoryController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<StoryDTO> updateStory(@PathVariable Long id,
             @RequestBody java.util.Map<String, Object> data) {
         Story existingStory = storyService.getStoryById(id);
@@ -248,6 +253,7 @@ public class StoryController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<Void> deleteStory(@PathVariable Long id) {
         Story story = storyService.getStoryById(id);
         String title = (story != null) ? story.getTitle() : id.toString();
